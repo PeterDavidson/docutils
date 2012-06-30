@@ -885,12 +885,14 @@ class Table(object):
         self.stubs = []
         self._in_thead = 0
 
-    def open(self):
+    def open(self,node):
         self._open = True
         self._col_specs = []
         self.caption = []
         self._attrs = {}
         self._in_head = False # maybe context with search
+        self.node = node
+        
     def close(self):
         self._open = False
         self._col_specs = None
@@ -987,6 +989,29 @@ class Table(object):
                                      for co in range (len_)])])
         return '%.2f\\DUtablewidth' % mc_width
 
+    def get_column_roles(self):
+        """Returns the role specified in column_rows """
+        role_count = len(self.node.column_roles)
+        if( role_count>0):
+
+            roles = self.node.column_roles[(self._cell_in_row-1)%(role_count)]
+            return [r'\DUrole{%s}{' % cls for cls in roles.split('|')]
+            #return '\DUrole{%s}{'%()
+        else:
+            return []
+
+    def get_header_roles(self):
+        """Returns the role specified in header_roles """
+        role_count = len(self.node.header_roles)
+        if( role_count>0):
+
+            roles = self.node.header_roles[(self._cell_in_row-1)%(role_count)]
+            return [r'\DUrole{%s}{' % cls for cls in roles.split('|')]
+            #return '\DUrole{%s}{'%()
+        else:
+            return ['\\textbf{']
+        
+        
     def get_caption(self):
         if not self.caption:
             return ''
@@ -1028,7 +1053,7 @@ class Table(object):
     def visit_row(self):
         self._cell_in_row = 0
     def depart_row(self):
-        res = [' \\\\\n']
+        res = [' \\tabularnewline\n'] # This is more flexible for some table structures
         self._cell_in_row = None  # remove cell counter
         for i in range(len(self._rowspan)):
             if (self._rowspan[i]>0):
@@ -1960,25 +1985,34 @@ class LaTeXTranslator(nodes.NodeVisitor):
             else:
                 bar1 = ''
             count = node['morecols'] + 1
-            self.out.append('\\multicolumn{%d}{%sp{%s}%s}{' %
-                    (count, bar1,
-                     self.active_table.get_multicolumn_width(
-                        self.active_table.get_entry_number(),
-                        count),
-                     self.active_table.get_vertical_bar()))
+            # PD: The following did not seem to work, and specific setting of the width is unnecessary. 
+            # Also I think that most multispans should default to centre
+            # self.out.append('\\multicolumn{%d}{%sp{%s}%s}{' %
+                    # (count, bar1,
+                     # self.active_table.get_multicolumn_width(
+                        # self.active_table.get_entry_number(),
+                        # count),
+                     # self.active_table.get_vertical_bar()))
+            self.out.append('\\multicolumn{%d}{c}{' % count)                     
             self.context.append('}')
         else:
             self.context.append('')
 
         # header / not header
         if isinstance(node.parent.parent, nodes.thead):
-            self.out.append('\\textbf{%')
-            self.context.append('}')
+            #self.out.append('\\textbf{') # PD: Removed a comment marker % from the end since it broke the mult-column stuff
+            #self.context.append('}')
+            roles = self.active_table.get_header_roles()
+            self.out.append(' '.join(roles))
+            self.context.append('}'*(len(roles)))
+
         elif self.active_table.is_stub_column():
             self.out.append('\\textbf{')
             self.context.append('}')
         else:
-            self.context.append('')
+            roles = self.active_table.get_column_roles()
+            self.out.append(' '.join(roles))
+            self.context.append('}'*(len(roles)))
 
     def depart_entry(self, node):
         self.out.append(self.context.pop()) # header / not header
@@ -2790,7 +2824,7 @@ class LaTeXTranslator(nodes.NodeVisitor):
             node.parent.index(node) == 1 and
             self.d_class.section(self.section_level).find('paragraph') != -1):
             self.out.append('\\leavevmode')
-        self.active_table.open()
+        self.active_table.open(node)
         for cls in node['classes']:
             self.active_table.set_table_style(cls)
         if self.active_table._table_style == 'booktabs':

@@ -111,6 +111,10 @@ class Table(Directive):
 
 
 class RSTTable(Table):
+    option_spec = {
+            'column-roles': directives.unchanged,
+            'header-roles': directives.unchanged,
+            'class': directives.class_option}
 
     def run(self):
         if not self.content:
@@ -130,6 +134,17 @@ class RSTTable(Table):
             return [error]
         table_node = node[0]
         table_node['classes'] += self.options.get('class', [])
+        
+        if('header-roles' in self.options):
+            table_node.header_roles = self.options['header-roles'].split(',')
+        else:
+            table_node.header_roles = []
+
+        if('column-roles' in self.options):
+            table_node.column_roles = self.options['column-roles'].split(',')
+        else:
+            table_node.column_roles = []
+        
         self.add_name(table_node)
         if title:
             table_node.insert(0, title)
