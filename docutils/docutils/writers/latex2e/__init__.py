@@ -30,7 +30,7 @@ from docutils.utils.math import pick_math_environment, unichar2tex
 
 class Writer(writers.Writer):
 
-    supported = ('latex','latex2e')
+    supported = ('latex','latex2e','meta')
     """Formats this writer supports."""
 
     default_template = 'default.tex'
@@ -202,6 +202,11 @@ class Writer(writers.Writer):
           '"--use-bibtex=mystyle,mydb1,mydb2".',
           ['--use-bibtex'],
           {'default': None, }),
+         ('List of keywords in the meta directive that should be treated'
+          'as latex commands. Any others will be used in \\def. ',
+          ['--meta_keywords'],
+          {'default':  '', }),
+
           ),)
 
     settings_defaults = {'sectnum_depth': 0 # updated by SectNum transform
@@ -1132,6 +1137,7 @@ class LaTeXTranslator(nodes.NodeVisitor):
             settings.section_prefix_for_enumerators)
         self.section_enumerator_separator = (
             settings.section_enumerator_separator.replace('_', r'\_'))
+        self.meta_keywords = map(lambda x: x.strip(), settings.meta_keywords.lower().split(','))
         # literal blocks:
         self.literal_block_env = ''
         self.literal_block_options = ''
@@ -1214,6 +1220,7 @@ class LaTeXTranslator(nodes.NodeVisitor):
         # author/organization/contact/address lines)
         self.author_stack = []
         self.date = []
+        self.metadata = []
 
         # PDF properties: pdftitle, pdfauthor
         # TODO?: pdfcreator, pdfproducer, pdfsubject, pdfkeywords
@@ -1875,6 +1882,7 @@ class LaTeXTranslator(nodes.NodeVisitor):
                                       ' \\and\n'.join(authors))
             # \date (empty \date prevents defaulting to \today)
             self.titledata.append(r'\date{%s}' % ', '.join(self.date))
+            self.titledata.append('\n'.join(self.metadata))
             # \maketitle in the body formats title with LaTeX
             self.body_pre_docinfo.append('\\maketitle\n')
 
@@ -2440,9 +2448,30 @@ class LaTeXTranslator(nodes.NodeVisitor):
             self.literal = False
         self.out.append(self.context.pop())
 
-    ## def visit_meta(self, node):
-    ##     self.out.append('[visit_meta]\n')
-        # TODO: set keywords for pdf?
+    def visit_meta(self, node):
+        for name,value in node.non_default_attributes().items():
+            assert value is not None
+            if isinstance(value, list):
+                content = ' '.join(value)
+            else:
+                content = value
+            if(name.lower()=='name'):
+                metaname = content
+            elif(name.lower()=='content'):
+                metaval = self.encode(content)
+
+        if(metaname.lower() in self.meta_keywords):
+            self.metadata.append('\\%s{%s}'%(metaname,metaval))
+        else:
+            self.metadata.append('\\def\\%s{%s}'%(metaname,metaval))
+
+        if(metaname.lower()=='keywords'):
+            keywords='} {'.join(metaval.split(','))
+            self.pdfinfo.append('  pdfkeywords={%s},' % keywords)
+        if(metaname.lower()=='subject'):
+            self.pdfinfo.append('  pdfsubject={%s},' % metaval)
+        # TODO: Update documentation to remove the following
+        # OLDTODO: set keywords for pdf?
         # But:
         #  The reStructuredText "meta" directive creates a "pending" node,
         #  which contains knowledge that the embedded "meta" node can only
@@ -2453,7 +2482,8 @@ class LaTeXTranslator(nodes.NodeVisitor):
         #  document.
         #  --- docutils/docs/peps/pep-0258.html#transformer
 
-    ## def depart_meta(self, node):
+    def depart_meta(self, node):
+        pass
     ##     self.out.append('[depart_meta]\n')
 
     def visit_math(self, node, math_env='$'):

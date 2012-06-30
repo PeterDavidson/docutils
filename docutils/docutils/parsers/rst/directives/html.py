@@ -34,7 +34,7 @@ class MetaBody(states.SpecializedBody):
         node = self.meta()
         pending = nodes.pending(components.Filter,
                                 {'component': 'writer',
-                                 'format': 'html',
+                                 'format': 'meta',
                                  'nodes': [node]})
         node['content'] = ' '.join(indented)
         if not indented:

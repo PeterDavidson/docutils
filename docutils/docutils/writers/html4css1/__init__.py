@@ -40,7 +40,7 @@ from docutils.utils.math.math2html import math2html
 
 class Writer(writers.Writer):
 
-    supported = ('html', 'html4css1', 'xhtml')
+    supported = ('html', 'html4css1', 'xhtml', 'meta')
     """Formats this writer supports."""
 
     default_stylesheet = 'html4css1.css'
