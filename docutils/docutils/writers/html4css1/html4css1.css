@@ -178,6 +178,26 @@ img.align-center, .figure.align-center, object.align-center {
 .align-right {
   text-align: right }
 
+td.left {
+  text-align: left;
+}
+
+td.center {
+  text-align: center;
+}
+
+td.right {
+  text-align: right;
+}
+
+td.bold {
+  font-weight: bold;
+}
+
+.lightshade {
+  background-color: rgb(230,255,200);
+}
+
 /* reset inner alignment in figures */
 div.align-right {
   text-align: inherit }

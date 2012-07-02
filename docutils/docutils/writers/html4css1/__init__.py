@@ -14,6 +14,7 @@ for proper viewing with a modern graphical browser.
 
 __docformat__ = 'reStructuredText'
 
+import pdb
 
 import sys
 import os
@@ -787,10 +788,14 @@ class HTMLTranslator(nodes.NodeVisitor):
             atts['class'].append('stub')
         if atts['class']:
             tagname = 'th'
-            atts['class'] = ' '.join(atts['class'])
+            atts['class'] = ' '.join(atts['class'])+' '+' '.join(self.get_header_roles(node))
         else:
             tagname = 'td'
             del atts['class']
+            #pdb.set_trace()
+            #role_list = self.table_node.column_roles[node.parent.column]
+            #atts['class']='peter%s'%'_'.join(self.table_node.column_roles) #node.parent.parent.parent.parent.options#.column_rows PETER
+            atts['class']=' '.join(self.get_column_roles(node))
         node.parent.column += 1
         if 'morerows' in node:
             atts['rowspan'] = node['morerows'] + 1
@@ -802,6 +807,29 @@ class HTMLTranslator(nodes.NodeVisitor):
         if len(node) == 0:              # empty cell
             self.body.append('&nbsp;')
         self.set_first_last(node)
+
+    def get_column_roles(self,node):
+        """Returns the role specified in column_rows """
+        role_count = len(self.table_node.column_roles)
+        if( role_count>0):
+
+            roles = self.table_node.column_roles[(node.parent.column)%(role_count)]
+            return [r'%s' % cls for cls in roles.split('|')]
+            #return '\DUrole{%s}{'%()
+        else:
+            return []
+
+    def get_header_roles(self,node):
+        """Returns the role specified in column_rows """
+        role_count = len(self.table_node.header_roles)
+        if( role_count>0):
+
+            roles = self.table_node.header_roles[(node.parent.column)%(role_count)]
+            return [r'%s' % cls for cls in roles.split('|')]
+            #return '\DUrole{%s}{'%()
+        else:
+            return []
+
 
     def depart_entry(self, node):
         self.body.append(self.context.pop())
@@ -1510,11 +1538,13 @@ class HTMLTranslator(nodes.NodeVisitor):
 
     def visit_table(self, node):
         classes = ' '.join(['docutils', self.settings.table_style]).strip()
+        self.table_node = node
         self.body.append(
             self.starttag(node, 'table', CLASS=classes, border="1"))
 
     def depart_table(self, node):
         self.body.append('</table>\n')
+        self.table_node=''
 
     def visit_target(self, node):
         if not ('refuri' in node or 'refid' in node
