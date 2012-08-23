@@ -995,7 +995,7 @@ class Table(object):
         if( role_count>0):
 
             roles = self.node.column_roles[(self._cell_in_row-1)%(role_count)]
-            return [r'\DUrole{%s}{' % cls for cls in roles.split('|')]
+            return [r'\DUrole{%s}{' % cls for cls in roles.split('+')]
             #return '\DUrole{%s}{'%()
         else:
             return []
@@ -1006,7 +1006,7 @@ class Table(object):
         if( role_count>0):
 
             roles = self.node.header_roles[(self._cell_in_row-1)%(role_count)]
-            return [r'\DUrole{%s}{' % cls for cls in roles.split('|')]
+            return [r'\DUrole{%s}{' % cls for cls in roles.split('+')]
             #return '\DUrole{%s}{'%()
         else:
             return ['\\textbf{']

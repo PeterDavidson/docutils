@@ -781,6 +781,7 @@ class HTMLTranslator(nodes.NodeVisitor):
 
     def visit_entry(self, node):
         atts = {'class': []}
+        row_num = node.parent.parent.row_num
         if isinstance(node.parent.parent, nodes.thead):
             atts['class'].append('head')
         if node.parent.parent.parent.stubs[node.parent.column]:
@@ -814,7 +815,7 @@ class HTMLTranslator(nodes.NodeVisitor):
         if( role_count>0):
 
             roles = self.table_node.column_roles[(node.parent.column)%(role_count)]
-            return [r'%s' % cls for cls in roles.split('|')]
+            return [r'%s' % cls for cls in roles.split('+')]
             #return '\DUrole{%s}{'%()
         else:
             return []
@@ -825,7 +826,7 @@ class HTMLTranslator(nodes.NodeVisitor):
         if( role_count>0):
 
             roles = self.table_node.header_roles[(node.parent.column)%(role_count)]
-            return [r'%s' % cls for cls in roles.split('|')]
+            return [r'%s' % cls for cls in roles.split('+')]
             #return '\DUrole{%s}{'%()
         else:
             return []
@@ -1421,6 +1422,7 @@ class HTMLTranslator(nodes.NodeVisitor):
 
     def visit_row(self, node):
         self.body.append(self.starttag(node, 'tr', ''))
+        node.parent.row_num += 1
         node.column = 0
 
     def depart_row(self, node):
@@ -1559,6 +1561,7 @@ class HTMLTranslator(nodes.NodeVisitor):
 
     def visit_tbody(self, node):
         self.write_colspecs()
+        node.row_num=0
         self.body.append(self.context.pop()) # '</colgroup>\n' or ''
         self.body.append(self.starttag(node, 'tbody', valign='top'))
 
@@ -1591,6 +1594,7 @@ class HTMLTranslator(nodes.NodeVisitor):
         # There may or may not be a <thead>; this is for <tbody> to use:
         self.context.append('')
         self.body.append(self.starttag(node, 'thead', valign='bottom'))
+        node.row_num = 0
 
     def depart_thead(self, node):
         self.body.append('</thead>\n')
