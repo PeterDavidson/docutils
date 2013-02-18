@@ -160,6 +160,8 @@ class CSVTable(Table):
                    'file': directives.path,
                    'url': directives.uri,
                    'encoding': directives.encoding,
+                   'column-roles': directives.unchanged,
+                   'header-roles': directives.unchanged,
                    'class': directives.class_option,
                    'name': directives.unchanged,
                    # field delimiter char
@@ -247,6 +249,17 @@ class CSVTable(Table):
         table_node = self.state.build_table(table, self.content_offset,
                                             stub_columns)
         table_node['classes'] += self.options.get('class', [])
+
+        if('header-roles' in self.options):
+            table_node.header_roles = self.options['header-roles'].split(',')
+        else:
+            table_node.header_roles = []
+
+        if('column-roles' in self.options):
+            table_node.column_roles = self.options['column-roles'].split(',')
+        else:
+            table_node.column_roles = []
+
         self.add_name(table_node)
         if title:
             table_node.insert(0, title)

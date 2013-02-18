@@ -104,7 +104,7 @@ class WordMLTranslator(nodes.NodeVisitor):
     as complicated as the HTML writer, surprisingly.
     """
 
-    title_styles = [ "Heading1", "Heading2", "Heading3" ]
+    title_styles = [ "Title", "Heading1", "Heading2", "Heading3" ]
     xml_spaces = '                                                                                '
 
     # these are meant to be default lists, one for bullet and one for enumerated.
@@ -328,7 +328,7 @@ class WordMLTranslator(nodes.NodeVisitor):
         return text
 
 
-    def visit_Text(self, node):
+    def visit_Text(self, node):            
         # if we have turned off text input, then just return
         if self.no_text:
             return
@@ -359,8 +359,7 @@ class WordMLTranslator(nodes.NodeVisitor):
         self.body.append(encoded)
         self.has_text_output = 1
 
-
-    def depart_Text(self, node):
+    def depart_Text(self, node):        
         # if we have turned off text input, then just return
         if self.no_text:
             return
@@ -441,12 +440,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_author(self, node):
         self.paragraph_properties[ 'author' ] = ('w:pStyle', { 'w:val' : 'AuthorName' })
         # self.paragraph_properties[ 'author' ] = '<w:pStyle w:val="AuthorName" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_author(self, node):
         del self.paragraph_properties[ 'author' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_authors(self, node):
@@ -594,12 +593,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_contact(self, node):
         self.paragraph_properties[ 'contact' ] = ( 'w:pStyle', { 'w:val' : 'AuthorContact' })
         # self.paragraph_properties[ 'contact' ] = '<w:pStyle w:val="AuthorContact" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_contact(self, node):
         del self.paragraph_properties[ 'contact' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_container(self, node):
@@ -613,12 +612,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_copyright(self, node):
         self.paragraph_properties[ 'copyright' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
         # self.paragraph_properties[ 'copyright' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_copyright(self, node):
         del self.paragraph_properties[ 'copyright' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_danger(self, node):
@@ -632,12 +631,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_date(self, node):
         self.paragraph_properties[ 'date' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
         # self.paragraph_properties[ 'date' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_date(self, node):
         del self.paragraph_properties[ 'date' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_decoration(self, node):
@@ -817,12 +816,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_field(self, node):
         self.paragraph_properties[ 'field' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
         # self.paragraph_properties[ 'field' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_field(self, node):
         del self.paragraph_properties[ 'field' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_field_body(self, node):
@@ -1064,16 +1063,25 @@ class WordMLTranslator(nodes.NodeVisitor):
 
 
     def visit_line_block(self, node):
-        pass
+        self.paragraph_properties[ 'field' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
+        self.visit_generic_paragraph( node )
 
 
     def depart_line_block(self, node):
-        pass
-
+        del self.paragraph_properties[ 'field' ]
+        self.depart_generic_paragraph( node )
 
     def visit_list_item(self, node):
-        pass
-
+        self.doc_tree.start('w:listPr',{})
+        self.doc_tree.start('w:ilvl',{'w:val':'0'})
+        self.doc_tree.end('w:ilvl')
+        self.doc_tree.start('w:ilfo',{'w:val':'46'})
+        self.doc_tree.end('w:ilfo')
+        self.doc_tree.start('wx:t',{'wx:val':'*'})
+        self.doc_tree.end('wx:t')
+        #self.doc_tree.start('wx:font',{'wx:val':'Symbol'})
+        #self.doc_tree.end('wx:font')
+        self.doc_tree.end('w:listPr')
 
     def depart_list_item(self, node):
         pass
@@ -1091,22 +1099,57 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_literal_block(self, node):
         self.paragraph_properties[ 'literal' ] = ( 'w:pStyle', { 'w:val' : 'LiteralBlock' })
         #~ self.paragraph_properties[ 'literal' ] = '<w:pStyle w:val="LiteralBlock" />\n'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
         self.literal_text = 1
 
 
     def depart_literal_block(self, node):
         del self.paragraph_properties[ 'literal' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
         self.literal_text = 0
 
 
+    def visit_math(self, node, math_env='$'):
+        """math role"""
+        # if node['classes']:
+        #     self.visit_inline(node)
+        # self.requirements['amsmath'] = r'\usepackage{amsmath}'
+        # math_code = node.astext().translate(unichar2tex.uni2tex_table)
+        # if node.get('ids'):
+        #     math_code = '\n'.join([math_code] + self.ids_to_labels(node))
+        # if math_env == '$':
+        #     wrapper = u'$%s$'
+        # else:
+        #     wrapper = u'\n'.join(['%%',
+        #                          r'\begin{%s}' % math_env,
+        #                          '%s',
+        #                          r'\end{%s}' % math_env])
+        # # print repr(wrapper), repr(math_code)
+        # self.out.append(wrapper % math_code)
+        # if node['classes']:
+        #     self.depart_inline(node)
+        # # Content already processed:
+        # raise nodes.SkipNode
+        self.visit_generic_paragraph( node )
+
+    def depart_math(self, node):
+        self.depart_generic_paragraph( node )
+
+    def visit_math_block(self, node):
+        # math_env = pick_math_environment(node.astext())
+        #self.visit_math(node, math_env=math_env)
+        self.visit_generic_paragraph( node )
+
+    def depart_math_block(self, node):
+        self.depart_generic_paragraph( node )
+
+
     def visit_meta(self, node):
-        pass
+        self.visit_generic_paragraph( node )
 
 
     def depart_meta(self, node):
-        pass
+        self.depart_generic_paragraph( node )
 
 
     def visit_note(self, node):
@@ -1168,15 +1211,34 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_organization(self, node):
         self.paragraph_properties[ 'organization' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' } )
         #~ self.paragraph_properties[ 'organization' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_organization(self, node):
         del self.paragraph_properties[ 'organization' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_paragraph(self, node):
+        self.visit_generic_paragraph( node )
+
+    def depart_paragraph(self, node):
+        self.depart_generic_paragraph( node )
+        
+        # Add in an extra paragraph
+        if(not isinstance( node.parent, nodes.list_item)):
+            self.doc_tree.start('w:p',{})
+            self.doc_tree.start('w:r',{})
+            self.doc_tree.start('w:t',{})
+            self.doc_tree.data('')
+            self.doc_tree.end('w:t')
+            self.doc_tree.end('w:r')
+            self.doc_tree.end('w:p')
+            self.body.append( "<w:p><w:r><w:t></w:t></w:r></w:p>\n" )
+
+
+
+    def visit_generic_paragraph(self, node):
         self.doc_tree.start( 'w:p', {} )
         self.body.append( "<w:p>\n" )
         if len( self.paragraph_properties ) > 0 or len( self.list_properties ) > 0 or (self.indentation > 0 and not self.in_footnote):
@@ -1214,7 +1276,7 @@ class WordMLTranslator(nodes.NodeVisitor):
             self.body.append( "\n</w:pPr>\n" )
 
 
-    def depart_paragraph(self, node):
+    def depart_generic_paragraph(self, node):
         self.doc_tree.end( 'w:p' );
         self.body.append( "</w:p>\n" )
 
@@ -1228,7 +1290,21 @@ class WordMLTranslator(nodes.NodeVisitor):
 
 
     def visit_raw(self, node):
-        pass
+        if not 'wordml' in node.get('format', '').split():
+            raise nodes.SkipNode
+        if not self.is_inline(node):
+            self.out.append('\n')
+        if node['classes']:
+            self.visit_inline(node)
+        # append "as-is" skipping any LaTeX-encoding
+        self.verbatim = True
+
+    def depart_raw(self, node):
+        self.verbatim = False
+        if node['classes']:
+            self.depart_inline(node)
+        if not self.is_inline(node):
+            self.out.append('\n')
 
 
     def visit_reference(self, node):
@@ -1309,12 +1385,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_status(self, node):
         self.paragraph_properties[ 'status' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
         #~ self.paragraph_properties[ 'status' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_status(self, node):
         del self.paragraph_properties[ 'status' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_strong(self, node):
@@ -1346,12 +1422,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_subtitle(self, node):
         self.paragraph_properties[ 'subtitle' ] = ( 'w:pStyle', { 'w:val' : self.title_styles[ self.section_level + 1 ] })
         #~ self.paragraph_properties[ 'subtitle' ] = '<w:pStyle w:val="' + self.title_styles[ self.section_level + 1 ] + '"/>\n'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_subtitle(self, node):
         del self.paragraph_properties[ 'subtitle' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_superscript(self, node):
@@ -1452,12 +1528,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_term(self, node):
         self.paragraph_properties[ 'term' ] = ( 'w:pStyle', { 'w:val' : 'DefinitionTerm' })
         #~ self.paragraph_properties[ 'term' ] = '<w:pStyle w:val="DefinitionTerm" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_term(self, node):
         del self.paragraph_properties[ 'term' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_tgroup(self, node):
@@ -1487,12 +1563,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_title(self, node, move_ids=1):
         self.paragraph_properties[ 'title' ] = ( 'w:pStyle', { 'w:val' : self.title_styles[ self.section_level ] })
         #~ self.paragraph_properties[ 'title' ] = '<w:pStyle w:val="' + self.title_styles[ self.section_level ] + '"/>\n'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_title(self, node):
         del self.paragraph_properties[ 'title' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_title_reference(self, node):
@@ -1506,12 +1582,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_topic(self, node):
         self.paragraph_properties[ 'topic' ] = ( 'w:pStyle', { 'w:val' : 'Topic' })
         #~ self.paragraph_properties[ 'topic' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_topic(self, node):
         del self.paragraph_properties[ 'topic' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_transition(self, node):
@@ -1525,12 +1601,12 @@ class WordMLTranslator(nodes.NodeVisitor):
     def visit_version(self, node):
         self.paragraph_properties[ 'version' ] = ( 'w:pStyle', { 'w:val' : 'BibliographMatter' })
         # self.paragraph_properties[ 'version' ] = '<w:pStyle w:val="BibliographMatter" />'
-        self.visit_paragraph( node )
+        self.visit_generic_paragraph( node )
 
 
     def depart_version(self, node):
         del self.paragraph_properties[ 'version' ]
-        self.depart_paragraph( node )
+        self.depart_generic_paragraph( node )
 
 
     def visit_warning(self, node):
